@@ -44,28 +44,51 @@ builder.defineCatalogHandler(async ({ id }) => {
 
 const port = Number(process.env.PORT) || 7000;
 
-// wrap the stremio interface so we can respond on / and /ping for Render
-const stremioInterface = builder.getInterface();
+// get the stremio interface once
+const stremioInterfaceCandidate = builder.getInterface();
+
+// helper to attempt calling the interface using a few possible shapes
+function callStremioInterface(handlerCandidate, req, res) {
+  try {
+    if (typeof handlerCandidate === "function") {
+      return handlerCandidate(req, res);
+    }
+    if (handlerCandidate && typeof handlerCandidate.default === "function") {
+      return handlerCandidate.default(req, res);
+    }
+    if (handlerCandidate && typeof handlerCandidate.handle === "function") {
+      return handlerCandidate.handle(req, res);
+    }
+    if (handlerCandidate && typeof handlerCandidate.callback === "function") {
+      return handlerCandidate.callback(req, res);
+    }
+    console.error("stremio interface is not callable. typeof:", typeof handlerCandidate, "value:", handlerCandidate);
+    if (!res.headersSent) res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end("stremio interface not available");
+  } catch (err) {
+    console.error("Error calling stremio interface:", err);
+    if (!res.headersSent) res.writeHead(500);
+    res.end("internal server error");
+  }
+}
+
+// create server and respond to Render health checks
 const server = http.createServer((req, res) => {
-  // quick health endpoints to satisfy Render's probes
   if (req.url === "/" || req.url === "/ping") {
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.end("ok");
     return;
   }
-  // forward everything else to the stremio interface
-  try {
-    stremioInterface(req, res);
-  } catch (err) {
-    console.error("Error in handler:", err);
-    // best-effort response
-    if (!res.headersSent) {
-      res.writeHead(500);
-    }
-    res.end("internal server error");
-  }
+
+  // forward to stremio interface
+  callStremioInterface(stremioInterfaceCandidate, req, res);
 });
 
 server.listen(port, "0.0.0.0", () => {
   console.log(`Trakt Up Next addon running on port ${port}`);
+  console.log("stremioInterface typeof:", typeof stremioInterfaceCandidate);
+  // if it's an object, log keys to help debugging
+  if (stremioInterfaceCandidate && typeof stremioInterfaceCandidate === "object") {
+    console.log("stremioInterface keys:", Object.keys(stremioInterfaceCandidate));
+  }
 });
