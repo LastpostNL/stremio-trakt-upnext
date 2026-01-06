@@ -17,6 +17,15 @@ function sendJson(res, status, obj) {
   res.end(body);
 }
 
+function ensureAbsolute(url) {
+  if (!url) return null;
+  return url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+}
+
+function first(arr) {
+  return Array.isArray(arr) && arr.length ? arr[0] : null;
+}
+
 function buildMetasFromTrakt(data) {
   return data
     .filter(item => item.show?.ids?.tmdb)
@@ -29,31 +38,19 @@ function buildMetasFromTrakt(data) {
       const episodeTitle = item.episode.title ? ` — ${item.episode.title}` : "";
       const name = `${item.show.title} — S${seasonStr}E${numberStr}${episodeTitle}`;
 
-      // Prefer episode images if Trakt provides them
+      // Episode images (often an array under episode.images.screenshot or .still)
       const episodeImages = item.episode?.images || {};
-      const episodePoster =
-        episodeImages.screenshot?.full ||
-        episodeImages.screenshot?.medium ||
-        episodeImages.screenshot?.thumb ||
-        episodeImages.still?.full ||
-        episodeImages.still?.medium ||
-        episodeImages.still?.thumb ||
-        null;
+      const episodeScreenshot = first(episodeImages.screenshot) || first(episodeImages.still) || null;
 
-      // Then try show images
+      // Show images (poster, thumb, fanart) — Trakt returns arrays
       const showImages = item.show?.images || {};
-      const showPoster =
-        showImages.poster?.thumb ||
-        showImages.poster?.medium ||
-        showImages.poster?.full ||
-        showImages.fanart?.full ||
-        showImages.banner?.full ||
-        null;
+      const showPoster = first(showImages.poster) || first(showImages.thumb) || null;
+      const showFanart = first(showImages.fanart) || null;
 
-      const poster = episodePoster || showPoster || null;
+      // Choose poster: episode screenshot > show poster > show fanart
+      const poster = ensureAbsolute(episodeScreenshot) || ensureAbsolute(showPoster) || ensureAbsolute(showFanart) || null;
 
       return {
-        // keep your id format if you need season+episode in id
         id: `tmdb:${tmdb}:${season}:${number}`,
         type: "series",
         name,
@@ -144,4 +141,5 @@ const server = http.createServer(async (req, res) => {
 server.listen(port, "0.0.0.0", () => {
   console.log(`Trakt Up Next (manual routes) running on port ${port}`);
 });
+
 
