@@ -5,7 +5,6 @@ import { URL } from "url";
 
 const port = Number(process.env.PORT) || 7000;
 
-// helper to send JSON with CORS
 function sendJson(res, status, obj) {
   const body = JSON.stringify(obj);
   res.writeHead(status, {
@@ -18,7 +17,6 @@ function sendJson(res, status, obj) {
   res.end(body);
 }
 
-// build metas from Trakt response (same logic used before)
 function buildMetasFromTrakt(data) {
   return data
     .filter(item => item.show?.ids?.tmdb)
@@ -50,7 +48,7 @@ const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
 
-    // Respond to health checks quickly
+    // Health endpoints
     if (url.pathname === "/" || url.pathname === "/ping") {
       res.writeHead(200, { "Content-Type": "text/plain", "Access-Control-Allow-Origin": "*" });
       res.end("ok");
@@ -74,17 +72,14 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Catalog endpoint used by Stremio
+    // Catalog endpoint (query-style)
     if (url.pathname === "/catalog") {
       const type = url.searchParams.get("type");
       const id = url.searchParams.get("id");
-
       if (type !== "tv" || id !== "trakt_upnext") {
-        // return empty metas for unknown queries per stremio expectations
         sendJson(res, 200, { metas: [] });
         return;
       }
-
       try {
         const data = await getUpNext();
         const metas = buildMetasFromTrakt(data);
@@ -92,13 +87,32 @@ const server = http.createServer(async (req, res) => {
         return;
       } catch (err) {
         console.error("Error fetching Trakt data:", err && err.message ? err.message : err);
-        // Return empty list (Stremio will keep trying) but include log on server
         sendJson(res, 200, { metas: [] });
         return;
       }
     }
 
-    // fallthrough 404 for other paths
+    // Catalog endpoint (path-style) — supports /catalog/<type>/<id>.json
+    const pathCatalogMatch = url.pathname.match(/^\/catalog\/([^\/]+)\/([^\/]+)\.json$/);
+    if (pathCatalogMatch) {
+      const [, type, id] = pathCatalogMatch;
+      if (type !== "tv" || id !== "trakt_upnext") {
+        sendJson(res, 200, { metas: [] });
+        return;
+      }
+      try {
+        const data = await getUpNext();
+        const metas = buildMetasFromTrakt(data);
+        sendJson(res, 200, { metas });
+        return;
+      } catch (err) {
+        console.error("Error fetching Trakt data:", err && err.message ? err.message : err);
+        sendJson(res, 200, { metas: [] });
+        return;
+      }
+    }
+
+    // fallthrough 404
     res.writeHead(404, { "Content-Type": "text/plain", "Access-Control-Allow-Origin": "*" });
     res.end("not found");
   } catch (err) {
