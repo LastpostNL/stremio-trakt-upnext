@@ -26,7 +26,7 @@ builder.defineCatalogHandler(async ({ id }) => {
 
 const port = process.env.PORT || 7000;
 
-// Maak een HTTP server en koppel de addon interface
-http.createServer(builder.getInterface()).listen(port, () => {
+// Luister op alle interfaces, niet alleen localhost
+http.createServer(builder.getInterface()).listen(port, '0.0.0.0', () => {
   console.log(`Trakt Up Next addon running on port ${port}`);
 });
