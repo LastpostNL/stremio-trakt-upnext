@@ -9,7 +9,8 @@ export const manifest = {
     {
       type: "series",
       id: "trakt_upnext",
-      name: "Volgende afleveringen (Trakt)"
+      name: "Afleveringen de komende 14 dagen"
     }
   ]
 };
+
