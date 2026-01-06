@@ -4,10 +4,10 @@ export const manifest = {
   name: "📺 Trakt Up Next",
   description: "Shows upcoming TV episodes from Trakt (catalog only)",
   resources: ["catalog"],
-  types: ["tv"],
+  types: ["series"],
   catalogs: [
     {
-      type: "tv",
+      type: "series",
       id: "trakt_upnext",
       name: "Volgende afleveringen (Trakt)"
     }
