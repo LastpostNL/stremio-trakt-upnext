@@ -36,7 +36,7 @@ function buildMetasFromTrakt(data) {
 
       return {
         id: `tmdb:${tmdb}:${season}:${number}`,
-        type: "tv",
+        type: "series",
         name,
         poster,
         ids: { tmdb }
@@ -76,7 +76,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/catalog") {
       const type = url.searchParams.get("type");
       const id = url.searchParams.get("id");
-      if (type !== "tv" || id !== "trakt_upnext") {
+      if (type !== "series" || id !== "trakt_upnext") {
         sendJson(res, 200, { metas: [] });
         return;
       }
@@ -96,7 +96,7 @@ const server = http.createServer(async (req, res) => {
     const pathCatalogMatch = url.pathname.match(/^\/catalog\/([^\/]+)\/([^\/]+)\.json$/);
     if (pathCatalogMatch) {
       const [, type, id] = pathCatalogMatch;
-      if (type !== "tv" || id !== "trakt_upnext") {
+      if (type !== "series" || id !== "trakt_upnext") {
         sendJson(res, 200, { metas: [] });
         return;
       }
