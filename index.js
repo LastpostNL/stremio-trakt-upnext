@@ -1,7 +1,6 @@
 import { addonBuilder } from "stremio-addon-sdk";
 import { manifest } from "./manifest.js";
 import { getUpNext } from "./trakt.js";
-import express from "express";
 
 const builder = new addonBuilder(manifest);
 
@@ -24,14 +23,8 @@ builder.defineCatalogHandler(async ({ id }) => {
   }
 });
 
-// 🚀 Express server voor Render
-const app = express();
+// ✅ Start de addon (de juiste manier in v1.6+)
 const port = process.env.PORT || 7000;
-
-// Stremio interface koppelen
-app.use("/", builder.getInterface());
-
-// Start server
-app.listen(port, () => {
-  console.log(`Trakt Up Next addon running on port ${port}`);
-});
+builder.run(port)
+  .then(() => console.log(`Trakt Up Next addon running on port ${port}`))
+  .catch(err => console.error(err));
