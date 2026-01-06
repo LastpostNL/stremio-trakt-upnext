@@ -12,7 +12,7 @@ builder.defineCatalogHandler(async ({ id }) => {
     const data = await getUpNext();
     return {
       metas: data
-        .filter(item => item.show?.ids?.tmdb) // only items with a TMDB id
+        .filter(item => item.show?.ids?.tmdb)
         .map(item => {
           const tmdb = item.show.ids.tmdb;
           const season = item.episode.season;
@@ -21,7 +21,6 @@ builder.defineCatalogHandler(async ({ id }) => {
           const numberStr = String(number).padStart(2, "0");
           const episodeTitle = item.episode.title ? ` — ${item.episode.title}` : "";
           const name = `${item.show.title} — S${seasonStr}E${numberStr}${episodeTitle}`;
-          // Trakt sometimes provides images in show.images.*.full
           const poster =
             item.show?.images?.poster?.full ||
             item.show?.images?.fanart?.full ||
@@ -33,7 +32,7 @@ builder.defineCatalogHandler(async ({ id }) => {
             type: "tv",
             name,
             poster,
-            ids: { tmdb } // helps metadata addons (AIOmetadata) match the item
+            ids: { tmdb }
           };
         })
     };
@@ -43,9 +42,30 @@ builder.defineCatalogHandler(async ({ id }) => {
   }
 });
 
-const port = process.env.PORT || 7000;
+const port = Number(process.env.PORT) || 7000;
 
-// Belangrijk: http.createServer werkt perfect met getInterface()
-http.createServer(builder.getInterface()).listen(port, '0.0.0.0', () => {
+// wrap the stremio interface so we can respond on / and /ping for Render
+const stremioInterface = builder.getInterface();
+const server = http.createServer((req, res) => {
+  // quick health endpoints to satisfy Render's probes
+  if (req.url === "/" || req.url === "/ping") {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("ok");
+    return;
+  }
+  // forward everything else to the stremio interface
+  try {
+    stremioInterface(req, res);
+  } catch (err) {
+    console.error("Error in handler:", err);
+    // best-effort response
+    if (!res.headersSent) {
+      res.writeHead(500);
+    }
+    res.end("internal server error");
+  }
+});
+
+server.listen(port, "0.0.0.0", () => {
   console.log(`Trakt Up Next addon running on port ${port}`);
 });
