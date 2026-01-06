@@ -15,7 +15,7 @@ function todayDate() {
  * Uses Trakt calendar endpoint:
  * upcoming episodes for the next `days` days starting from today
  */
-export async function getUpNext(days = 7) {
+export async function getUpNext(days = 14) {
   const start = todayDate();
   const url = `${API}/calendars/my/shows/${start}/${days}`;
   console.log("Fetching Trakt calendar:", url);
@@ -45,3 +45,4 @@ export async function getUpNext(days = 7) {
     throw new Error(`Failed to parse Trakt JSON: ${err.message}. body: ${text}`);
   }
 }
+
