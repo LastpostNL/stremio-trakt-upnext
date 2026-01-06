@@ -28,13 +28,32 @@ function buildMetasFromTrakt(data) {
       const numberStr = String(number).padStart(2, "0");
       const episodeTitle = item.episode.title ? ` — ${item.episode.title}` : "";
       const name = `${item.show.title} — S${seasonStr}E${numberStr}${episodeTitle}`;
-      const poster =
-        item.show?.images?.poster?.full ||
-        item.show?.images?.fanart?.full ||
-        item.show?.images?.banner?.full ||
+
+      // Prefer episode images if Trakt provides them
+      const episodeImages = item.episode?.images || {};
+      const episodePoster =
+        episodeImages.screenshot?.full ||
+        episodeImages.screenshot?.medium ||
+        episodeImages.screenshot?.thumb ||
+        episodeImages.still?.full ||
+        episodeImages.still?.medium ||
+        episodeImages.still?.thumb ||
         null;
 
+      // Then try show images
+      const showImages = item.show?.images || {};
+      const showPoster =
+        showImages.poster?.thumb ||
+        showImages.poster?.medium ||
+        showImages.poster?.full ||
+        showImages.fanart?.full ||
+        showImages.banner?.full ||
+        null;
+
+      const poster = episodePoster || showPoster || null;
+
       return {
+        // keep your id format if you need season+episode in id
         id: `tmdb:${tmdb}:${season}:${number}`,
         type: "series",
         name,
@@ -125,3 +144,4 @@ const server = http.createServer(async (req, res) => {
 server.listen(port, "0.0.0.0", () => {
   console.log(`Trakt Up Next (manual routes) running on port ${port}`);
 });
+
