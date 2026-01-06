@@ -1,0 +1,12 @@
+{
+  "name": "stremio-trakt-upnext",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "stremio-addon-sdk": "^1.6.10",
+    "node-fetch": "^3.3.2"
+  }
+}
