@@ -1,12 +1,10 @@
 import { addonBuilder } from "stremio-addon-sdk";
 import { manifest } from "./manifest.js";
 import { getUpNext } from "./trakt.js";
-import express from "express";
+import http from "http";
 
 const builder = new addonBuilder(manifest);
-const app = express();
 
-// Catalog handler
 builder.defineCatalogHandler(async ({ id }) => {
   if (id !== "trakt_upnext") return { metas: [] };
 
@@ -26,11 +24,9 @@ builder.defineCatalogHandler(async ({ id }) => {
   }
 });
 
-// Koppel addon interface aan Express
-app.use("/", builder.getInterface());
-
-// Luister op poort Render geeft
 const port = process.env.PORT || 7000;
-app.listen(port, () => {
+
+// Belangrijk: http.createServer werkt perfect met getInterface()
+http.createServer(builder.getInterface()).listen(port, '0.0.0.0', () => {
   console.log(`Trakt Up Next addon running on port ${port}`);
 });
