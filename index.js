@@ -22,6 +22,7 @@ builder.defineCatalogHandler(async ({ id }) => {
 });
 
 const port = process.env.PORT || 7000;
-builder.getInterface().listen(port);
 
-console.log(`Trakt Up Next addon running on port ${port}`);
+builder.run(port)
+  .then(() => console.log(`Trakt Up Next addon running on port ${port}`))
+  .catch(err => console.error(err));
