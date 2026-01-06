@@ -5,9 +5,7 @@ import { getUpNext } from "./trakt.js";
 const builder = new addonBuilder(manifest);
 
 builder.defineCatalogHandler(async ({ id }) => {
-  if (id !== "trakt_upnext") {
-    return { metas: [] };
-  }
+  if (id !== "trakt_upnext") return { metas: [] };
 
   const data = await getUpNext();
 
@@ -21,8 +19,8 @@ builder.defineCatalogHandler(async ({ id }) => {
   };
 });
 
+// ✅ Dit is de juiste manier voor ESM + Node 22
 const port = process.env.PORT || 7000;
-
-builder.run(port)
+builder.getInterface().startServer(port)
   .then(() => console.log(`Trakt Up Next addon running on port ${port}`))
   .catch(err => console.error(err));
